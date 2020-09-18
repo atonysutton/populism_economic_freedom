@@ -1,10 +1,10 @@
 library(tidyverse)
 
 #load and merge data ----
-##Team Populism data from Hawkins, Kirk A., Rosario Aguilar, Erin Jenne, Bojana Kocijan, Crist�bal Rovira Kaltwasser, Bruno Castanho Silva. 2019.
+##Team Populism data from Hawkins, Kirk A., Rosario Aguilar, Erin Jenne, Bojana Kocijan, Cristóbal Rovira Kaltwasser, Bruno Castanho Silva. 2019.
  ##Global Populism Database: Populism Dataset for Leaders 1.0.
  ##Available for download at populism.byu.edu
-pop <- read_csv('C:/Tony/Political Science MA/data/Team Populism/team_populism_prepared.csv',
+pop <- read_csv('team_populism_prepared.csv',
                 col_types = "ccccccdinfii") %>%
   rename_all(tolower)
 
@@ -31,7 +31,7 @@ pop <- pop %>% mutate(ideology = fct_recode(as.factor(left_right),
  ##on 14 September 2020
  ##see also James Gwartney, Robert Lawson, Joshua Hall, and Ryan Murphy
  ##Economic Freedom of the World Annual Report 2020
-fraser <- read_csv('C:/Tony/Political Science MA/data/Fraser economic freedom/EFW_panel_data.csv',
+fraser <- read_csv('EFW_panel_data.csv',
                 col_types = 'iccdddddd') %>%
   rename_all(tolower)
 
@@ -152,22 +152,86 @@ ggplot(data = pef)+
  
 #Analyze relationship between populism and economic freedom
 
-pef %>% filter(populism_score >= 0.8) %>% summarise(avg_effect = mean(efi_change), count= n())
+pef %>% filter(populism_score >= 0.8) %>%
+  summarise(avg_effect = mean(efi_change), count= n())
 summary(lm(efi_change ~ term_number, data = (pef %>% filter(populism_score >= 0.8))))
 summary(lm(efi_change ~ cumulative_tenure, data = (pef %>% filter(populism_score >= 1))))
 
 summary(lm(efi_change ~ populism_score + term_number, data = pef))
 
+summary(lm(efi_change ~ populism_score + efi, data = pef))
 
+ ##chart populism against efi, split by ideology
 ggplot(data = pef, aes(x = efi_change, y = populism_score))+
   geom_point(aes(color = ideology))+
   geom_smooth(aes(color = ideology), se = FALSE)
 
+ ##chart efi change by term number (but few populists with many terms)
+ggplot(data = (pef %>% filter(populism_score >=0.8)),
+       aes(x = term_number, y = efi_change))+
+  geom_point()+
+  geom_smooth()
+
+ ## focus on area 2, property rights
+pef %>% filter(populism_score >= 0.8) %>%
+  summarise(avg_effect = mean(area2_change), count= n())
+summary(lm(area2_change ~ populism_score, data = pef))
+
+ggplot(data = pef, aes(x = area2_change, y = populism_score))+
+  geom_point(aes(color = ideology))+
+  geom_smooth(aes(color = ideology), se = FALSE)
+
+ggplot(data = pef, aes(y = populism_score))+
+  geom_smooth(aes(x = area1_change), color = 'red', se = FALSE)+
+  geom_smooth(aes(x = area2_change), color = 'yellow', se = FALSE)+
+  geom_smooth(aes(x = area3_change), color = 'green', se = FALSE)+
+  geom_smooth(aes(x = area4_change), color = 'blue', se = FALSE)+
+  geom_smooth(aes(x = area5_change), color = 'violet', se = FALSE)
+
+
+ggplot(data = pef, aes(x = area3_change, y = populism_score))+
+  geom_point()+
+  facet_wrap('ideology')
+
+summary(lm(area3_change ~ populism_score + cumulative_tenure + ideology, data = pef))
+
+ggplot(data = pef, aes(x = area5_change, y = populism_score))+
+  geom_point(aes(color = ideology))+
+
+ggplot(data = pef,
+       aes(x=cumulative_tenure, y = efi_change, color = populism_score >= 0.8))+
+  geom_point()+
+  geom_smooth(span = 5, se = FALSE)
+
+
+
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x =efi, y = efi_change))+
+  geom_point(aes(color = ideology))+
+  geom_smooth()+
+  geom_hline(yintercept = 0)+
+  facet_wrap('populist')
+  
+
+
+pef %>% arrange(efi_change) %>% select(country, leader, efi_change, ideology) %>% head(10)
 
 #Project notes
 for analysis, consider effects of ideology, length of tenure, term number, region?
 
 Filter at outset to only democracies?  would need to link to BMR, I guess
 
+how to deal with too small n? 
 
-
+seems that most important control variable is starting efi
+  
+Reference:
+  Area 1: Size of Government—
+    government spending, taxation, and the size of government-controlled enterprises 
+  Area 2: Legal System and Property Rights
+    Protection of persons and their rightfully acquired property
+  Area 3: Sound Money
+    Inflation height and volatility 
+  Area 4: Freedom to Trade Internationally
+  Area 5: Regulation
+    right to exchange, gain credit, hire or work for whom you wish, or freely operate your business
