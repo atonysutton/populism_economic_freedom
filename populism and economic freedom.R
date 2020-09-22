@@ -1,4 +1,5 @@
 library(tidyverse)
+setwd('C:/Tony/git_workspace/populism_economic_freedom/populism_economic_freedom')
 
 #load and merge data ----
 ##Team Populism data from Hawkins, Kirk A., Rosario Aguilar, Erin Jenne, Bojana Kocijan, Cristóbal Rovira Kaltwasser, Bruno Castanho Silva. 2019.
@@ -48,34 +49,6 @@ summary(pop$year_end)
 
 pef <- fraser %>%
   inner_join(pop, by = c('iso_code', 'year' = 'year_begin'))
-
-
-##note length of tenure and number of terms
-pef <- pef %>% mutate(tenure = year_end - year)
-
-pef <- pef %>% arrange(leader, year)
-pef <- pef %>% group_by(leader) %>% mutate(total_terms = n()) %>% ungroup()
-
-
-pef[1, 'term_number'] <- 1
-for (i in 1:(nrow(pef)-1)){
-  i = i+1
-  pef[i, 'term_number'] <-
-    if_else(as.character(pef[i, 'leader']) == as.character(pef[(i-1), 'leader']),  #if the prior row is the same leader...
-            as.integer(pef[(i-1), 'term_number']) + 1,                             #...then count an additional term
-            1)
-}
-
-
-pef[1, 'cumulative_tenure'] <- as.integer(pef[1, 'tenure'])
-for (i in 1:(nrow(pef)-1)){
-  i = i+1
-  pef[i, 'cumulative_tenure'] <-
-    if_else(as.integer(pef[i, 'term_number']) > 1,                                         #if multiple terms...
-            as.integer(pef[(i-1), 'cumulative_tenure']) + as.integer(pef[(i), 'tenure']),  #...then add combined tenure
-            as.integer(pef[1, 'tenure']))
-}
-
 
 #add column for economic freedom index at end of tenure ----
 
@@ -137,6 +110,39 @@ pef <- pef %>% mutate(efi_change = efi_end - efi,
                       area3_change = area3_end - area3,
                       area4_change = area4_end - area4,
                       area5_change = area5_end - area5,)
+
+
+#note length of tenure and number of terms
+pef <- pef %>% mutate(tenure = year_end - year)
+
+pef <- pef %>% arrange(leader, year)
+pef <- pef %>% group_by(leader) %>% mutate(total_terms = n()) %>% ungroup()
+
+pef[1, 'term_number'] <- 1
+for (i in 1:(nrow(pef)-1)){
+  i = i+1
+  pef[i, 'term_number'] <-
+    if_else(as.character(pef[i, 'leader']) == as.character(pef[(i-1), 'leader']),  #if the prior row is the same leader...
+            as.integer(pef[(i-1), 'term_number']) + 1,                             #...then count an additional term
+            1)
+}
+
+
+pef[1, 'cumulative_tenure'] <- as.integer(pef[1, 'tenure'])
+pef[1, 'cumulative_efi_change'] <- pef[1,'efi_change']
+
+for (i in 0:(nrow(pef)-1)){
+  i = i+1
+  pef[i, 'cumulative_tenure'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                         #if multiple terms...
+            as.integer(pef[(i-1), 'cumulative_tenure']) + as.integer(pef[i, 'tenure']),  #...then add combined tenure
+            as.integer(pef[1, 'tenure']))
+  pef[i, 'cumulative_efi_change'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                               #if multiple terms...
+            as.numeric(pef[(i-1), 'cumulative_efi_change']) + as.numeric(pef[i, 'efi_change']),  #...then add combined change
+            as.numeric(pef[i, 'efi_change']))
+}
+
 
 ##check general trends in efi components during tenures of populism database leaders
 lapply(pef[,27:32], FUN = mean)
@@ -213,6 +219,60 @@ ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
   facet_wrap('populist')
   
 
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = efi, y = cumulative_efi_change))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'lm')+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  labs(title = 'Economic Freedom Stalls Under Populist Leaders')
+
+pef %>% nrow()
+pef %>% filter(term_number == total_terms) %>% nrow()
+
+ ## repeat with only one observation per leader
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = efi, y = cumulative_efi_change))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE)+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  labs(title = 'Economic Freedom Stalls Under Populist Leaders')
+
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = area1, y = (area1_end - area1)))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'lm')+
+  geom_hline(yintercept = 0)+
+  theme_minimal()
+
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = area2, y = (area2_end - area2)))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'lm')+
+  geom_hline(yintercept = 0)+
+  theme_minimal()
+
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = area3, y = (area3_end - area3)))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'lm')+
+  geom_hline(yintercept = 0)+
+  theme_minimal()
+
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = area4, y = (area4_end - area4)))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'lm')+
+  geom_hline(yintercept = 0)+
+  theme_minimal()
+
+ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
+       aes(x = area5, y = (area5_end - area5)))+
+  geom_point(aes(color = populist))+
+  geom_smooth(aes(color = populist), method = 'lm')+
+  geom_hline(yintercept = 0)+
+  theme_minimal()
 
 pef %>% arrange(efi_change) %>% select(country, leader, efi_change, ideology) %>% head(10)
 
@@ -221,9 +281,13 @@ for analysis, consider effects of ideology, length of tenure, term number, regio
 
 Filter at outset to only democracies?  would need to link to BMR, I guess
 
+search for best breakpoint to say populist or not
+
 how to deal with too small n? 
 
 seems that most important control variable is starting efi
+
+may be better to take leader as unit of analysis, instead of term
   
 Reference:
   Area 1: Size of Government—
