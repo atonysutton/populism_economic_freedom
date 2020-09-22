@@ -1,5 +1,4 @@
 library(tidyverse)
-setwd('C:/Tony/git_workspace/populism_economic_freedom/populism_economic_freedom')
 
 #load and merge data ----
 ##Team Populism data from Hawkins, Kirk A., Rosario Aguilar, Erin Jenne, Bojana Kocijan, Cristóbal Rovira Kaltwasser, Bruno Castanho Silva. 2019.
