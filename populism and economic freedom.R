@@ -2,8 +2,8 @@ library(tidyverse)
 
 #load and merge data ----
 ##Team Populism data from Hawkins, Kirk A., Rosario Aguilar, Erin Jenne, Bojana Kocijan, Cristóbal Rovira Kaltwasser, Bruno Castanho Silva. 2019.
- ##Global Populism Database: Populism Dataset for Leaders 1.0.
- ##Available for download at populism.byu.edu
+##Global Populism Database: Populism Dataset for Leaders 1.0.
+##Available for download at populism.byu.edu
 pop <- read_csv('team_populism_prepared.csv',
                 col_types = "ccccccdinfii") %>%
   rename_all(tolower)
@@ -27,12 +27,12 @@ pop <- pop %>% mutate(ideology = fct_recode(as.factor(left_right),
 
 
 ##Fraser data from Fraser Institute's Economic Freedom Index,
- ##downloaded from https://www.fraserinstitute.org/studies/economic-freedom-of-the-world-2020-annual-report
- ##on 14 September 2020
- ##see also James Gwartney, Robert Lawson, Joshua Hall, and Ryan Murphy
- ##Economic Freedom of the World Annual Report 2020
+##downloaded from https://www.fraserinstitute.org/studies/economic-freedom-of-the-world-2020-annual-report
+##on 14 September 2020
+##see also James Gwartney, Robert Lawson, Joshua Hall, and Ryan Murphy
+##Economic Freedom of the World Annual Report 2020
 fraser <- read_csv('EFW_panel_data.csv',
-                col_types = 'iccdddddd') %>%
+                   col_types = 'iccdddddd') %>%
   rename_all(tolower)
 
 skimr::skim(fraser)
@@ -153,8 +153,8 @@ ggplot(data = pef)+
   geom_density(aes(x = area3_change), color = 'green')+
   geom_density(aes(x = area4_change), color = 'blue')+
   geom_density(aes(x = area5_change), color = 'violet')
- 
- 
+
+
 #Analyze relationship between populism and economic freedom
 
 pef %>% filter(populism_score >= 0.8) %>%
@@ -166,18 +166,18 @@ summary(lm(efi_change ~ populism_score + term_number, data = pef))
 
 summary(lm(efi_change ~ populism_score + efi, data = pef))
 
- ##chart populism against efi, split by ideology
+##chart populism against efi, split by ideology
 ggplot(data = pef, aes(x = efi_change, y = populism_score))+
   geom_point(aes(color = ideology))+
   geom_smooth(aes(color = ideology), se = FALSE)
 
- ##chart efi change by term number (but few populists with many terms)
+##chart efi change by term number (but few populists with many terms)
 ggplot(data = (pef %>% filter(populism_score >=0.8)),
        aes(x = term_number, y = efi_change))+
   geom_point()+
   geom_smooth()
 
- ## focus on area 2, property rights
+## focus on area 2, property rights
 pef %>% filter(populism_score >= 0.8) %>%
   summarise(avg_effect = mean(area2_change), count= n())
 summary(lm(area2_change ~ populism_score, data = pef))
@@ -201,10 +201,10 @@ ggplot(data = pef, aes(x = area3_change, y = populism_score))+
 summary(lm(area3_change ~ populism_score + cumulative_tenure + ideology, data = pef))
 
 ggplot(data = pef, aes(x = area5_change, y = populism_score))+
-  geom_point(aes(color = ideology))+
+  geom_point(aes(color = ideology))
 
 ggplot(data = pef,
-       aes(x=cumulative_tenure, y = efi_change, color = populism_score >= 0.8))+
+         aes(x=cumulative_tenure, y = efi_change, color = populism_score >= 0.8))+
   geom_point()+
   geom_smooth(span = 5, se = FALSE)
 
@@ -216,7 +216,7 @@ ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
   geom_smooth()+
   geom_hline(yintercept = 0)+
   facet_wrap('populist')
-  
+
 
 ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
        aes(x = efi, y = cumulative_efi_change))+
@@ -229,15 +229,36 @@ ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
 pef %>% nrow()
 pef %>% filter(term_number == total_terms) %>% nrow()
 
- ## repeat with only one observation per leader
-ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = (populism_score >=0.8))),
-       aes(x = efi, y = cumulative_efi_change))+
-  geom_point(aes(color = populist))+
-  geom_smooth(aes(color = populist), method = 'loess', se = FALSE)+
-  geom_hline(yintercept = 0)+
-  theme_minimal()+
-  labs(title = 'Economic Freedom Stalls Under Populist Leaders')
+## hunt for break point to group populists and non-populists
+ggplot(data = pef, aes(x = populism_score))+
+  geom_histogram(binwidth = 0.1)
+##resume main analysis
 
+
+## repeat with only one observation per leader
+pop_colors <- c(populist = 'firebrick', nonpopulist = 'lightsteelblue')
+
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
+       aes(x = efi, y = cumulative_efi_change))+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
+  scale_color_manual(values = pop_colors)+
+  geom_hline(yintercept = 0)+
+#  facet_wrap('populist')+
+  theme_minimal()+
+  labs(title = 'Populists Stall Economic Freedom',
+       subtitle = '  as measured by Fraser Index during tenure',
+       x = 'Economic Freedom at Outset',
+       y = 'Change in Economic Freedom')+
+  theme(title = element_text(size = 20),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        strip.text = element_text(size = 18),
+        panel.grid.minor = element_blank(),
+        legend.position = 'none')+
+  annotate("text", x = 4.5, y = 0.83, color = 'steelblue', size = 6, label = 'Non-populist')+
+  annotate("text", x = 4.5, y = -0.33, color = 'firebrick', size = 6, label = 'Populist')
+  
 ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
        aes(x = area1, y = (area1_end - area1)))+
   geom_point(aes(color = populist))+
@@ -277,24 +298,24 @@ pef %>% arrange(efi_change) %>% select(country, leader, efi_change, ideology) %>
 
 #Project notes
 for analysis, consider effects of ideology, length of tenure, term number, region?
-
-Filter at outset to only democracies?  would need to link to BMR, I guess
+  
+  Filter at outset to only democracies?  would need to link to BMR, I guess
 
 search for best breakpoint to say populist or not
 
 how to deal with too small n? 
-
-seems that most important control variable is starting efi
+  
+  seems that most important control variable is starting efi
 
 may be better to take leader as unit of analysis, instead of term
-  
+
 Reference:
   Area 1: Size of Government—
-    government spending, taxation, and the size of government-controlled enterprises 
-  Area 2: Legal System and Property Rights
-    Protection of persons and their rightfully acquired property
-  Area 3: Sound Money
-    Inflation height and volatility 
-  Area 4: Freedom to Trade Internationally
-  Area 5: Regulation
-    right to exchange, gain credit, hire or work for whom you wish, or freely operate your business
+government spending, taxation, and the size of government-controlled enterprises 
+Area 2: Legal System and Property Rights
+Protection of persons and their rightfully acquired property
+Area 3: Sound Money
+Inflation height and volatility 
+Area 4: Freedom to Trade Internationally
+Area 5: Regulation
+right to exchange, gain credit, hire or work for whom you wish, or freely operate your business
