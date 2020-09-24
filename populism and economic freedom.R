@@ -78,6 +78,11 @@ pef <- fraser %>%
   inner_join(pop, by = c('iso_code', 'year' = 'year_begin'))
 
 
+n_distinct(pef$leader)
+n_distinct(pef$iso_code)
+summary(pef$year)
+summary(pef$year_end)
+
 #add column for economic freedom index at end of tenure ----
 
 ##functions to find efi and its components at end
@@ -198,6 +203,11 @@ for (i in 0:(nrow(pef)-1)){
 }
 
 
+##note starting efi in each leader's first term
+first_terms <- pef %>% filter(term_number == 1) %>% select(leader, first_efi = efi)
+
+pef <- pef %>% left_join(first_terms, by = 'leader')
+
 ##check general trends in efi components during tenures of populism database leaders
 lapply(pef[,27:32], FUN = mean)
 
@@ -294,14 +304,14 @@ ggplot(data = pef, aes(x = populism_score))+
 pop_colors <- c(populist = 'firebrick', nonpopulist = 'lightsteelblue')
 
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
-       aes(x = efi, y = cumulative_efi_change))+
-  geom_point(aes(color = populist), size = 2)+
-  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
-  scale_color_manual(values = pop_colors)+
+       aes(x = first_efi, y = cumulative_efi_change))+
   geom_hline(yintercept = 0)+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', span = 1.3, se = FALSE, size = 2)+
+  scale_color_manual(values = pop_colors)+
 #  facet_wrap('populist')+
   theme_minimal()+
-  scale_y_continuous(limits = c(-2.5, 2.5))+
+  scale_y_continuous(limits = c(-2.5, 2.1))+
   labs(title = 'Populists Might Stall Economic Freedom',
        subtitle = '  as measured by Fraser Index during tenure',
        x = 'Economic Freedom at Outset',
@@ -313,9 +323,14 @@ ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = 
         strip.text = element_text(size = 18),
         panel.grid.minor = element_blank(),
         legend.position = 'none')+
-  annotate("text", x = 4.5, y = 1.33, color = 'steelblue', size = 6, label = 'Non-populist')+
-  annotate("text", x = 4.5, y = -0.66, color = 'firebrick', size = 6, label = 'Populist')
-  
+  annotate("text", x = 4.5, y = 1.4, color = 'steelblue', size = 6, label = 'Non-populist')+
+  annotate("text", x = 4.5, y = -1.4, color = 'firebrick', size = 6, label = 'Populist')
+ 
+ggsave(filename = "populist_affect_econ_freedom.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+ 
  ##look at components - none seems to singly drive the overall result
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
        aes(x = efi, y = cumulative_area1_change))+
@@ -359,7 +374,7 @@ ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = 
   theme(legend.position = 'none')
 
 
-pef %>% arrange(efi_change) %>% select(country, leader, efi_change, ideology) %>% head(10)
+pef %>% arrange(cumulative_efi_change) %>% select(country, leader, cumulative_efi_change, ideology, year, first_efi) %>% head(10)
 
 
 ##rate of populism over time (subject to selection bias in dataset)
