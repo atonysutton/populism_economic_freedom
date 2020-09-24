@@ -46,10 +46,35 @@ pop$year_end <- as.integer(if_else(pop$year_end %in% c(1899, 2019), as.numeric(e
 summary(pop$year_end)
 
  ##for cases with missing data, interpolate by matching to most recent fraser efi score
-pop <- pop %>% mutate(match_year = if_else((year_begin > 1995 & year_begin < 2000), as.integer(1995), as.integer(year_begin)))
+temp2000 <- fraser %>% filter(year == 2000) %>% select(year, iso_code, efi, area1, area2, area3, area4, area5)
+temp1995 <- fraser %>% filter(year == 1995)
+interpolated_fraser_98 <- temp1995 %>%
+  left_join(temp2000, by = 'iso_code', suffix = c('.95', '.00')) %>%
+  mutate(year = as.integer(1998),
+         efi =  ((efi.00 - efi.95) * 0.6) + efi.95,
+         area1 = ((area1.00 - area1.95) * 0.6) + area1.95,
+         area2 = ((area2.00 - area2.95) * 0.6) + area2.95,
+         area3 = ((area3.00 - area3.95) * 0.6) + area3.95,
+         area4 = ((area4.00 - area4.95) * 0.6) + area4.95,
+         area5 = ((area5.00 - area5.95) * 0.6) + area5.95) %>%
+  select(year, iso_code, countries, efi, area1, area2, area3, area4, area5)
+interpolated_fraser_99 <- temp1995 %>%
+  left_join(temp2000, by = 'iso_code', suffix = c('.95', '.00')) %>%
+  mutate(year = as.integer(1999),
+         efi =  ((efi.00 - efi.95) * 0.8) + efi.95,
+         area1 = ((area1.00 - area1.95) * 0.8) + area1.95,
+         area2 = ((area2.00 - area2.95) * 0.8) + area2.95,
+         area3 = ((area3.00 - area3.95) * 0.8) + area3.95,
+         area4 = ((area4.00 - area4.95) * 0.8) + area4.95,
+         area5 = ((area5.00 - area5.95) * 0.8) + area5.95) %>%
+  select(year, iso_code, countries, efi, area1, area2, area3, area4, area5)
 
+fraser <- fraser %>% 
+  rbind(interpolated_fraser_98[,]) %>%
+  rbind(interpolated_fraser_99[,]) 
+  
 pef <- fraser %>%
-  inner_join(pop, by = c('iso_code', 'year' = 'match_year'))
+  inner_join(pop, by = c('iso_code', 'year' = 'year_begin'))
 
 #add column for economic freedom index at end of tenure ----
 
@@ -268,14 +293,14 @@ pop_colors <- c(populist = 'firebrick', nonpopulist = 'lightsteelblue')
 
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
        aes(x = efi, y = cumulative_efi_change))+
-  geom_point(aes(color = populist), size = 2.5)+
+  geom_point(aes(color = populist), size = 2)+
   geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
   scale_color_manual(values = pop_colors)+
   geom_hline(yintercept = 0)+
 #  facet_wrap('populist')+
   theme_minimal()+
-  scale_y_continuous(limits = c(-2,2))+
-  labs(title = 'Populists Stall Economic Freedom',
+  scale_y_continuous(limits = c(-2.5, 2.5))+
+  labs(title = 'Populists Might Stall Economic Freedom',
        subtitle = '  as measured by Fraser Index during tenure',
        x = 'Economic Freedom at Outset',
        y = 'Change in Economic Freedom')+
