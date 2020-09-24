@@ -45,9 +45,11 @@ pop <- pop %>% filter(year_begin <= (efi_last - 1))
 pop$year_end <- as.integer(if_else(pop$year_end %in% c(1899, 2019), as.numeric(efi_last), as.numeric(pop$year_end)))
 summary(pop$year_end)
 
+ ##for cases with missing data, interpolate by matching to most recent fraser efi score
+pop <- pop %>% mutate(match_year = if_else((year_begin > 1995 & year_begin < 2000), as.integer(1995), as.integer(year_begin)))
 
 pef <- fraser %>%
-  inner_join(pop, by = c('iso_code', 'year' = 'year_begin'))
+  inner_join(pop, by = c('iso_code', 'year' = 'match_year'))
 
 #add column for economic freedom index at end of tenure ----
 
@@ -266,24 +268,26 @@ pop_colors <- c(populist = 'firebrick', nonpopulist = 'lightsteelblue')
 
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
        aes(x = efi, y = cumulative_efi_change))+
-  geom_point(aes(color = populist), size = 3)+
+  geom_point(aes(color = populist), size = 2.5)+
   geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
   scale_color_manual(values = pop_colors)+
   geom_hline(yintercept = 0)+
 #  facet_wrap('populist')+
   theme_minimal()+
+  scale_y_continuous(limits = c(-2,2))+
   labs(title = 'Populists Stall Economic Freedom',
        subtitle = '  as measured by Fraser Index during tenure',
        x = 'Economic Freedom at Outset',
        y = 'Change in Economic Freedom')+
   theme(title = element_text(size = 20),
         axis.title = element_text(size = 18),
+        axis.title.y = element_text(margin = margin(r = 10)),
         axis.text = element_text(size = 16),
         strip.text = element_text(size = 18),
         panel.grid.minor = element_blank(),
         legend.position = 'none')+
   annotate("text", x = 4.5, y = 0.83, color = 'steelblue', size = 6, label = 'Non-populist')+
-  annotate("text", x = 4.5, y = -0.33, color = 'firebrick', size = 6, label = 'Populist')
+  annotate("text", x = 4.5, y = -0.5, color = 'firebrick', size = 6, label = 'Populist')
   
  ##look at components - none seems to singly drive the overall result
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
