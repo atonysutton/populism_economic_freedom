@@ -266,7 +266,7 @@ pop_colors <- c(populist = 'firebrick', nonpopulist = 'lightsteelblue')
 
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
        aes(x = efi, y = cumulative_efi_change))+
-  geom_point(aes(color = populist), size = 2)+
+  geom_point(aes(color = populist), size = 3)+
   geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
   scale_color_manual(values = pop_colors)+
   geom_hline(yintercept = 0)+
@@ -366,6 +366,12 @@ ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
   theme_minimal()
 
 pef %>% arrange(efi_change) %>% select(country, leader, efi_change, ideology) %>% head(10)
+
+
+##rate of populism over time (subject to selection bias in dataset)
+ggplot(data = pef, aes(x = year, y = populism_score))+
+  geom_point(position = 'jitter')+
+  geom_smooth()
 
 #Project notes
 for analysis, consider effects of ideology, length of tenure, term number, region?
