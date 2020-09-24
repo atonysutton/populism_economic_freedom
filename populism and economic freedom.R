@@ -129,6 +129,11 @@ for (i in 1:(nrow(pef)-1)){
 
 pef[1, 'cumulative_tenure'] <- as.integer(pef[1, 'tenure'])
 pef[1, 'cumulative_efi_change'] <- pef[1,'efi_change']
+pef[1, 'cumulative_area1_change'] <- pef[1,'area1_change']
+pef[1, 'cumulative_area2_change'] <- pef[1,'area2_change']
+pef[1, 'cumulative_area3_change'] <- pef[1,'area3_change']
+pef[1, 'cumulative_area4_change'] <- pef[1,'area4_change']
+pef[1, 'cumulative_area5_change'] <- pef[1,'area5_change']
 
 for (i in 0:(nrow(pef)-1)){
   i = i+1
@@ -140,6 +145,27 @@ for (i in 0:(nrow(pef)-1)){
     if_else(as.integer(pef[i, 'term_number']) > 1,                                               #if multiple terms...
             as.numeric(pef[(i-1), 'cumulative_efi_change']) + as.numeric(pef[i, 'efi_change']),  #...then add combined change
             as.numeric(pef[i, 'efi_change']))
+  pef[i, 'cumulative_area1_change'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                                   #if multiple terms...
+            as.numeric(pef[(i-1), 'cumulative_area1_change']) + as.numeric(pef[i, 'area1_change']),  #...then add combined change
+            as.numeric(pef[i, 'area1_change']))
+  pef[i, 'cumulative_area2_change'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                                   #if multiple terms...
+            as.numeric(pef[(i-1), 'cumulative_area2_change']) + as.numeric(pef[i, 'area2_change']),  #...then add combined change
+            as.numeric(pef[i, 'area2_change']))
+  pef[i, 'cumulative_area3_change'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                                   #if multiple terms...
+            as.numeric(pef[(i-1), 'cumulative_area3_change']) + as.numeric(pef[i, 'area3_change']),  #...then add combined change
+            as.numeric(pef[i, 'area3_change']))
+  pef[i, 'cumulative_area4_change'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                                   #if multiple terms...
+            as.numeric(pef[(i-1), 'cumulative_area4_change']) + as.numeric(pef[i, 'area4_change']),  #...then add combined change
+            as.numeric(pef[i, 'area4_change']))
+  pef[i, 'cumulative_area5_change'] <-
+    if_else(as.integer(pef[i, 'term_number']) > 1,                                                   #if multiple terms...
+            as.numeric(pef[(i-1), 'cumulative_area5_change']) + as.numeric(pef[i, 'area5_change']),  #...then add combined change
+            as.numeric(pef[i, 'area5_change']))
+  
 }
 
 
@@ -259,6 +285,51 @@ ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = 
   annotate("text", x = 4.5, y = 0.83, color = 'steelblue', size = 6, label = 'Non-populist')+
   annotate("text", x = 4.5, y = -0.33, color = 'firebrick', size = 6, label = 'Populist')
   
+ ##look at components - none seems to singly drive the overall result
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
+       aes(x = efi, y = cumulative_area1_change))+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
+  scale_color_manual(values = pop_colors)+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  theme(legend.position = 'none')
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
+       aes(x = efi, y = cumulative_area2_change))+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
+  scale_color_manual(values = pop_colors)+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  theme(legend.position = 'none')
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
+       aes(x = efi, y = cumulative_area3_change))+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
+  scale_color_manual(values = pop_colors)+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  theme(legend.position = 'none')
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
+       aes(x = efi, y = cumulative_area4_change))+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
+  scale_color_manual(values = pop_colors)+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  theme(legend.position = 'none')
+ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
+       aes(x = efi, y = cumulative_area5_change))+
+  geom_point(aes(color = populist), size = 2)+
+  geom_smooth(aes(color = populist), method = 'loess', se = FALSE, size = 1.5)+
+  scale_color_manual(values = pop_colors)+
+  geom_hline(yintercept = 0)+
+  theme_minimal()+
+  theme(legend.position = 'none')
+
+
+
+
 ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
        aes(x = area1, y = (area1_end - area1)))+
   geom_point(aes(color = populist))+
@@ -319,3 +390,4 @@ Inflation height and volatility
 Area 4: Freedom to Trade Internationally
 Area 5: Regulation
 right to exchange, gain credit, hire or work for whom you wish, or freely operate your business
+
