@@ -45,7 +45,7 @@ pop <- pop %>% filter(year_begin <= (efi_last - 1))
 pop$year_end <- as.integer(if_else(pop$year_end %in% c(1899, 2019), as.numeric(efi_last), as.numeric(pop$year_end)))
 summary(pop$year_end)
 
- ##for cases with missing data, interpolate by matching to most recent fraser efi score
+ ##for cases with missing data, interpolate by comparing prior and subsequent fraser efi scores
 temp2000 <- fraser %>% filter(year == 2000) %>% select(year, iso_code, efi, area1, area2, area3, area4, area5)
 temp1995 <- fraser %>% filter(year == 1995)
 interpolated_fraser_98 <- temp1995 %>%
@@ -72,9 +72,11 @@ interpolated_fraser_99 <- temp1995 %>%
 fraser <- fraser %>% 
   rbind(interpolated_fraser_98[,]) %>%
   rbind(interpolated_fraser_99[,]) 
-  
+
+##combine datasets
 pef <- fraser %>%
   inner_join(pop, by = c('iso_code', 'year' = 'year_begin'))
+
 
 #add column for economic freedom index at end of tenure ----
 
@@ -208,7 +210,7 @@ ggplot(data = pef)+
   geom_density(aes(x = area5_change), color = 'violet')
 
 
-#Analyze relationship between populism and economic freedom
+#Analyze relationship between populism and economic freedom ----
 
 pef %>% filter(populism_score >= 0.8) %>%
   summarise(avg_effect = mean(efi_change), count= n())
@@ -288,7 +290,7 @@ ggplot(data = pef, aes(x = populism_score))+
 ##resume main analysis
 
 
-## repeat with only one observation per leader
+## repeat with only one observation per leader ----
 pop_colors <- c(populist = 'firebrick', nonpopulist = 'lightsteelblue')
 
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
@@ -311,8 +313,8 @@ ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = 
         strip.text = element_text(size = 18),
         panel.grid.minor = element_blank(),
         legend.position = 'none')+
-  annotate("text", x = 4.5, y = 0.83, color = 'steelblue', size = 6, label = 'Non-populist')+
-  annotate("text", x = 4.5, y = -0.5, color = 'firebrick', size = 6, label = 'Populist')
+  annotate("text", x = 4.5, y = 1.33, color = 'steelblue', size = 6, label = 'Non-populist')+
+  annotate("text", x = 4.5, y = -0.66, color = 'firebrick', size = 6, label = 'Populist')
   
  ##look at components - none seems to singly drive the overall result
 ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = if_else(populism_score >=0.8, 'populist', 'nonpopulist'))),
@@ -357,43 +359,6 @@ ggplot(data = (pef %>% filter(term_number == total_terms) %>% mutate(populist = 
   theme(legend.position = 'none')
 
 
-
-
-ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
-       aes(x = area1, y = (area1_end - area1)))+
-  geom_point(aes(color = populist))+
-  geom_smooth(aes(color = populist), method = 'lm')+
-  geom_hline(yintercept = 0)+
-  theme_minimal()
-
-ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
-       aes(x = area2, y = (area2_end - area2)))+
-  geom_point(aes(color = populist))+
-  geom_smooth(aes(color = populist), method = 'lm')+
-  geom_hline(yintercept = 0)+
-  theme_minimal()
-
-ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
-       aes(x = area3, y = (area3_end - area3)))+
-  geom_point(aes(color = populist))+
-  geom_smooth(aes(color = populist), method = 'lm')+
-  geom_hline(yintercept = 0)+
-  theme_minimal()
-
-ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
-       aes(x = area4, y = (area4_end - area4)))+
-  geom_point(aes(color = populist))+
-  geom_smooth(aes(color = populist), method = 'lm')+
-  geom_hline(yintercept = 0)+
-  theme_minimal()
-
-ggplot(data = (pef %>% mutate(populist = (populism_score >=0.8))),
-       aes(x = area5, y = (area5_end - area5)))+
-  geom_point(aes(color = populist))+
-  geom_smooth(aes(color = populist), method = 'lm')+
-  geom_hline(yintercept = 0)+
-  theme_minimal()
-
 pef %>% arrange(efi_change) %>% select(country, leader, efi_change, ideology) %>% head(10)
 
 
@@ -402,27 +367,30 @@ ggplot(data = pef, aes(x = year, y = populism_score))+
   geom_point(position = 'jitter')+
   geom_smooth()
 
-#Project notes
-for analysis, consider effects of ideology, length of tenure, term number, region?
-  
-  Filter at outset to only democracies?  would need to link to BMR, I guess
+ggplot(data = pef, aes(x = year, y = populism_score))+
+  geom_point(aes(color = region), position = 'jitter')+
+  geom_smooth(aes(color = region), se = FALSE)
 
-search for best breakpoint to say populist or not
-
-how to deal with too small n? 
-  
-  seems that most important control variable is starting efi
-
-may be better to take leader as unit of analysis, instead of term
-
-Reference:
-  Area 1: Size of Government—
-government spending, taxation, and the size of government-controlled enterprises 
-Area 2: Legal System and Property Rights
-Protection of persons and their rightfully acquired property
-Area 3: Sound Money
-Inflation height and volatility 
-Area 4: Freedom to Trade Internationally
-Area 5: Regulation
-right to exchange, gain credit, hire or work for whom you wish, or freely operate your business
-
+################# Project notes ###################
+#for analysis, consider effects of ideology, length of tenure, term number, region?
+#  
+# Filter at outset to only democracies?  would need to link to BMR, I guess
+#
+#how to deal with too small n? 
+#  
+#  seems that most important control variable is starting efi
+#
+#may be better to take leader as unit of analysis, instead of term
+#
+#Reference:
+#  Area 1: Size of Government—
+#government spending, taxation, and the size of government-controlled enterprises 
+#Area 2: Legal System and Property Rights
+#Protection of persons and their rightfully acquired property
+#Area 3: Sound Money
+#Inflation height and volatility 
+#Area 4: Freedom to Trade Internationally
+#Area 5: Regulation
+#right to exchange, gain credit, hire or work for whom you wish, or freely operate your business
+#
+################# end project notes ###################
